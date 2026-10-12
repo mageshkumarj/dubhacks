@@ -20,7 +20,7 @@ Git is only needed to clone the repository; you can download it as a ZIP instead
 ## Quickstart (about 2 minutes)
 
 ```bash
-git clone <this-repo-url> && cd tmobile-sandbox
+git clone <this-repo-url> && cd dubhacks
 ./run.sh            # macOS / Linux
 .\run.ps1           # Windows (PowerShell)
 ```
