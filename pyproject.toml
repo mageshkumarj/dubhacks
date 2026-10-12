@@ -1,0 +1,25 @@
+[project]
+name = "tmobile-hackathon-sandbox"
+version = "0.1.0"
+description = "Stub T-Mobile commerce and customer-context sandbox for hackathons (synthetic data only)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "S"]
+ignore = ["S311"]  # random is intentional: synthetic data, not security
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S608"]
+"datagen/labels.py" = ["S608"]  # f-string interpolates only a module constant
+"scripts/*" = ["E501", "S310"]  # a self-contained tool; long, dense lines and plain-HTTP requests are intended
+"tests/test_smoke_script.py" = ["E501"]  # one-line tampering rules read better unwrapped
+
+[tool.coverage.run]
+source = ["datagen", "api"]
