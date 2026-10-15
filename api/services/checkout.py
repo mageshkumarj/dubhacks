@@ -3,7 +3,7 @@
 import sqlite3
 
 from ..errors import conflict, invalid
-from . import carts, promotions, protection
+from . import carts, device_offers, promotions, protection
 from .cart_pricing import build_view
 from .store import Cart, MemoryStore, new_id
 
@@ -19,9 +19,16 @@ def _applied(conn: sqlite3.Connection, cart: Cart, skus: list[str]) -> list[dict
     if missing:
         raise invalid("PROMO_NOT_ELIGIBLE", f"Not eligible or unknown: {', '.join(missing)}")
     chosen = [eligible[s] for s in unique]
-    devices = sum(1 for i in cart.items if i.kind == "device")
-    if sum(1 for p in chosen if p["per"] == "device") > devices:
-        raise invalid("PROMO_CONFLICT", "Only one device-credit promotion can apply per device in the cart")
+    per_device = [p for p in chosen if p["per"] == "device"]
+    if per_device:
+        rows = [conn.execute("SELECT * FROM promotions WHERE sku = ?", (p["sku"],)).fetchone() for p in per_device]
+        covered = device_offers.assign(rows, [i.sku for i in cart.items if i.kind == "device"])
+        by_sku = {r["sku"]: r for r in rows}
+        chosen = [
+            {**p, "estimated_savings_cents": promotions.unit_value_cents(by_sku[p["sku"]]) * covered[p["sku"]]}
+            if p["sku"] in covered else p
+            for p in chosen
+        ]
     return chosen
 
 

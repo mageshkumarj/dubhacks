@@ -132,7 +132,10 @@ curl -X POST localhost:8000/v1/cart/CART-.../items -H 'content-type: application
   Eligibility depends on the customer (segment group, tenure, credit tier, device age, recent support contacts),
   the cart (new line, `port_in`, trade-in, device, plan, add-ons, accessories) and the offer's own limits.
   `GET /v1/catalog/promotions` lists the rules; `source=stub` are invented retention offers.
-- At checkout, `promo_skus` must be eligible. Only one device-attached offer can apply per device. Savings are reported in `promo_savings_cents`
+- At checkout, `promo_skus` must be eligible. Only one device-attached offer can apply per device: checkout assigns each phone at most one offer (the
+  most valuable assignment) and returns `PROMO_CONFLICT` if a chosen offer is left without a phone. `GET /v1/promotions`
+  still shows each offer's standalone estimate. Offers that need an old phone (`OLD-PHONE-UPGRADE`) check the phone
+  being traded in, and the accessory bundle discounts at most its 6 most expensive units. Savings are reported in `promo_savings_cents`
   (an open-ended monthly credit counts for 12 months) and are **not** subtracted from the totals.
 - A line's device can be traded in **once** per server run. `monthly_cents` can be negative (a plan downgrade).
 - `Idempotency-Key` is scoped to the cart. Replaying with the same `promo_skus` returns the same order;
