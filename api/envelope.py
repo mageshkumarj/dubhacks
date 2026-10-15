@@ -14,3 +14,5 @@ def fail(message: str, code: str) -> dict:
         "success": False, "data": None, "error": {"code": code, "message": message},
         "meta": {}, "data_source": SOURCE,
     }
+
+STUB_HEADERS = {"X-Data-Source": "stub"}

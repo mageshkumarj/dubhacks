@@ -169,6 +169,7 @@ class CartItemView(Strict):
     monthly_cents: int
     credit_earned_cents: int
     credit_applied_cents: int
+    balance_owed_cents: int
 
 
 class CartTotals(Strict):
@@ -178,6 +179,7 @@ class CartTotals(Strict):
     tradein_credit_cents: int
     tradein_credit_applied_cents: int
     tradein_credit_unapplied_cents: int
+    tradein_balance_owed_cents: int
 
 
 class CartView(Strict):

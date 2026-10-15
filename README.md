@@ -113,6 +113,9 @@ curl -X POST localhost:8000/v1/cart/CART-.../items -H 'content-type: application
   down; `subprime` is 9.9% with 20% down. `"payment": "full"` charges the whole price today.
 - Trade-in credit from `tradein` items is applied to the **first device** in the cart. Anything left over is
   reported as `tradein_credit_unapplied_cents`. A `tradein` item takes its device from the line you name.
+- Trading in a phone that is still being paid off **charges the remaining balance today** (`balance_owed_cents` on the
+  item, `tradein_balance_owed_cents` in the totals) and drops that phone's old monthly installment, so the item's
+  `monthly_cents` is negative. A paid-off phone owes 0.
 - A `plan` item charges the **difference** from the line's current plan. A `new_line` item is priced by its
   position in the household using the plan's published per-line table (each extra line costs less).
 - Device protection must cover a real phone, and the tier must match it. Name the line (`line_id`) to protect the phone
@@ -123,12 +126,16 @@ curl -X POST localhost:8000/v1/cart/CART-.../items -H 'content-type: application
   (`ADDON_NOT_ELIGIBLE`). Accessories list the devices they fit in `compatible_device_skus`.
 - Discount plans (55+, Partner, Community) are sold only to accounts with a matching `discount_group`;
   55+ and Saver plans allow at most 2 lines and the Essentials 4 Line Offer needs 4 or more (`PLAN_NOT_ELIGIBLE`,
-  `PLAN_LINE_LIMIT`).
+  `PLAN_LINE_LIMIT`). New lines in the cart count towards a plan's limits, so add the `new_line` items first
+  (a family adding its 4th line can then move its existing lines to the 4 Line Offer). Checkout re-checks the limits.
 - `GET /v1/promotions` returns every offer with `eligible`, the `reasons` it is not, and `estimated_savings_cents`.
   Eligibility depends on the customer (segment group, tenure, credit tier, device age, recent support contacts),
   the cart (new line, `port_in`, trade-in, device, plan, add-ons, accessories) and the offer's own limits.
   `GET /v1/catalog/promotions` lists the rules; `source=stub` are invented retention offers.
-- At checkout, `promo_skus` must be eligible. Only one device-attached offer can apply per device. Savings are reported in `promo_savings_cents`
+- At checkout, `promo_skus` must be eligible. Only one device-attached offer can apply per device: checkout assigns each phone at most one offer (the
+  most valuable assignment) and returns `PROMO_CONFLICT` if a chosen offer is left without a phone. `GET /v1/promotions`
+  still shows each offer's standalone estimate. Offers that need an old phone (`OLD-PHONE-UPGRADE`) check the phone
+  being traded in, and the accessory bundle discounts at most its 6 most expensive units. Savings are reported in `promo_savings_cents`
   (an open-ended monthly credit counts for 12 months) and are **not** subtracted from the totals.
 - A line's device can be traded in **once** per server run. `monthly_cents` can be negative (a plan downgrade).
 - `Idempotency-Key` is scoped to the cart. Replaying with the same `promo_skus` returns the same order;
@@ -169,6 +176,14 @@ python -m datagen --labels-out private/labels.json --label-model private/model.p
   for extra signals and should differ structurally from the public features, not just in coefficients.
 - Labels can only be written to `private/` or outside the repo. Salts under 32 characters are rejected.
 - The labels file stores a SHA-256 of the model, never its parameters.
-- Exclude `ACC-PERSONA-*` accounts from scoring. Their notes describe their situation.
+- `ACC-PERSONA-*` accounts are left out of the labels file: their stories are pinned by hand.
+- The labels file has two parts. `churned_90d` is one random draw per account, and `probability` is the model's
+  churn probability for each account (4 decimals) that the draw came from. Score submissions against `probability`
+  (log loss or Brier score against `probability`, or Spearman correlation). A single draw is noisy: on the shipped data
+  the best possible AUC is about 0.825, one signal alone (recent support contacts) scores about 0.776, and one draw moves
+  AUC by about 0.01, so a leaderboard on `churned_90d` alone mostly ranks noise near the top.
+- Do not build `private/model.py` on the generator's internals (for example `AccountSpec.unhappiness`, or anything you
+  can recompute from `datagen/` with the public seed 2026): anyone can recompute those from the public code. Base the
+  model on what is in the database, as above.
 - Before publishing, both of these must print nothing: `git ls-files private/` and
   `git grep -lE '"churned_90d": \{$'` (the second matches a generated labels file, not the README text).

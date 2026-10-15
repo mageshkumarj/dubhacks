@@ -19,6 +19,8 @@ ROOT = Path(__file__).resolve().parent.parent
 PRIVATE_DIR = ROOT / "private"
 MIN_SALT_LENGTH = 32
 SUPPORT_WINDOW_DAYS = 90
+PERSONA_PREFIX = "ACC-PERSONA-"  # hand-pinned stories, never scored
+PROBABILITY_DECIMALS = 4
 
 _FEATURES_SQL = f"""
 
@@ -86,14 +88,17 @@ def write_labels(db_path: Path, out_path: Path, salt: str, model_path: Path | No
     conn.row_factory = sqlite3.Row
     try:
         rows = conn.execute(_FEATURES_SQL, {"as_of": catalog.AS_OF.isoformat()}).fetchall()
-        churned = {}
-        for row in rows:
+        churned, probability = {}, {}
+        for row in (r for r in rows if not r["account_id"].startswith(PERSONA_PREFIX)):
             account_id = row["account_id"]
             p = model.probability(account_id, _features(row), conn)
             churned[account_id] = int(derived_rng(salt, account_id).random() < p)
+            probability[account_id] = round(p, PROBABILITY_DECIMALS)
     finally:
         conn.close()
-    payload = {"as_of": catalog.AS_OF.isoformat(), "model": fingerprint, "churned_90d": churned}
+    payload = {
+        "as_of": catalog.AS_OF.isoformat(), "model": fingerprint, "churned_90d": churned, "probability": probability,
+    }
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(payload, sort_keys=True, indent=1))
     return out_path

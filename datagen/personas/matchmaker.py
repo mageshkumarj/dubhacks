@@ -5,8 +5,8 @@ from .base import CART_WHISPERER, ESS, MATCHMAKER, NEXT_BEST_MOMENT, SAVER, cust
 
 MATCH = (
     customer(
-        19, "single", 22, 0.3, (LineSpec("primary", "heavy", 12, plan_sku=SAVER),),
-        "Heavy video streamer on the basic plan.", support_recent=1, support_older=0,
+        19, "single", 22, 0.3, (LineSpec("primary", "heavy", 12, plan_sku=SAVER, usage_gb=45, usage_growth=1.06),),
+        support_recent=1, support_older=0,
         title="Customer whose video habit outgrew a basic plan", theme=MATCHMAKER, secondary=(NEXT_BEST_MOMENT,),
         scenario="Usage has grown to far more than the plan was built for since they began streaming video all day. "
                  "Which plan would suit how they use their phone now?",
@@ -15,7 +15,7 @@ MATCH = (
         20, "couple", 18, 0.2, (
             LineSpec("primary", "moderate", 10, plan_sku=ESS, label="Partner 1"),
             LineSpec("partner", "moderate", 12, plan_sku=ESS, label="Partner 2"),
-        ), "Couple who want a smartwatch and home internet.", support_recent=0, support_older=0,
+        ), support_recent=0, support_older=0,
         title="Couple who want a smartwatch and home internet", theme=MATCHMAKER, secondary=(CART_WHISPERER,),
         scenario="Two moderate users on a basic plan say they would like a smartwatch line and home internet. Which "
                  "plan and bundle fit them, and what are the trade-offs?",

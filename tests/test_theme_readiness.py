@@ -52,6 +52,9 @@ def test_every_persona_tells_a_story_without_giving_the_answer(conn):
     assert [b for b in banned if b in text] == []
     account_notes = " ".join((r[0] or "").lower() for r in conn.execute("SELECT persona_note FROM accounts"))
     assert [b for b in banned if b in account_notes] == []
+    notes = dict(conn.execute("SELECT account_id, persona_note FROM accounts WHERE persona_note IS NOT NULL"))
+    titles = {p["account_id"]: p["title"] for p in personas(conn, kind="customer")}
+    assert notes == titles  # the notes served by /context describe the situation, never the diagnosis
 
 
 def test_persona_titles_are_unique(conn):
@@ -176,7 +179,8 @@ def test_next_best_moment_has_a_bill_shock_with_a_reason(conn):
 
 def test_every_bill_change_has_a_reason(conn):
     reasons = {r[0] for r in conn.execute("SELECT DISTINCT change_reason FROM billing_history")}
-    assert reasons <= {"stable", "device_installment", "promo_expired"} and "device_installment" in reasons
+    assert reasons <= {"stable", "device_installment", "installment_ended", "promo_expired"}
+    assert {"device_installment", "installment_ended"} <= reasons
     assert conn.execute("SELECT COUNT(*) FROM billing_history WHERE change_reason IS NULL").fetchone()[0] == 0
 
 

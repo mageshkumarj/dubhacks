@@ -39,13 +39,34 @@ def test_weak_salt_is_rejected(tmp_path, db):
         write_labels(db, tmp_path / "x.json", salt="hackathon2026")
 
 
-def test_labels_cover_all_accounts_with_realistic_churn_rate(tmp_path, db):
+def test_labels_cover_non_persona_accounts_with_realistic_churn_rate(tmp_path, db):
     out = tmp_path / "labels.json"
     write_labels(db, out, salt=SALT)
     labels = _labels(out)["churned_90d"]
-    total = sqlite3.connect(db).execute("SELECT COUNT(*) FROM accounts").fetchone()[0]
+    total = sqlite3.connect(db).execute(
+        "SELECT COUNT(*) FROM accounts WHERE account_id NOT LIKE 'ACC-PERSONA-%'"
+    ).fetchone()[0]
     assert len(labels) == total
     assert 0.04 < sum(labels.values()) / total < 0.25
+
+
+def test_labels_exclude_persona_accounts(tmp_path, db):
+    out = tmp_path / "labels.json"
+    write_labels(db, out, salt=SALT)
+    payload = _labels(out)
+    assert not [a for a in payload["churned_90d"] if a.startswith("ACC-PERSONA-")]
+    assert not [a for a in payload["probability"] if a.startswith("ACC-PERSONA-")]
+
+
+def test_labels_include_the_probability_each_label_was_drawn_from(tmp_path, db):
+    out = tmp_path / "labels.json"
+    write_labels(db, out, salt=SALT)
+    payload = _labels(out)
+    assert payload["probability"].keys() == payload["churned_90d"].keys()
+    assert all(0.0 <= p <= 1.0 and round(p, 4) == p for p in payload["probability"].values())
+    mean_p = sum(payload["probability"].values()) / len(payload["probability"])
+    churn_rate = sum(payload["churned_90d"].values()) / len(payload["churned_90d"])
+    assert abs(mean_p - churn_rate) < 0.03
 
 
 def test_reference_model_churn_is_predictable_from_signals(tmp_path, db):
@@ -53,7 +74,7 @@ def test_reference_model_churn_is_predictable_from_signals(tmp_path, db):
     write_labels(db, out, salt=SALT)
     labels = _labels(out)["churned_90d"]
     rows = sqlite3.connect(db).execute("SELECT account_id, competitor_research_score FROM account_signals")
-    rows = rows.fetchall()
+    rows = [r for r in rows.fetchall() if r[0] in labels]
     hi = [labels[a] for a, s in rows if s >= 0.6]
     lo = [labels[a] for a, s in rows if s < 0.3]
     assert sum(hi) / len(hi) > 2 * (sum(lo) / len(lo))

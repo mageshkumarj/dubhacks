@@ -202,7 +202,7 @@ def check_account(r: Runner, account_id: str) -> None:
     r.expect(months == sorted(months), "billing is chronological", account_id)
     dates = [s["interaction_date"] for s in support[1]["data"]]
     r.expect(dates == sorted(dates, reverse=True), "support contacts are newest first", account_id)
-    reasons = {"stable", "device_installment", "promo_expired"}
+    reasons = {"stable", "device_installment", "installment_ended", "promo_expired"}
     r.expect(all(b["change_reason"] in reasons for b in billing[1]["data"]), "billing change reasons are valid", account_id)
 
 

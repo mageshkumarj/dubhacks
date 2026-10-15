@@ -10,7 +10,6 @@ from .money import half_up
 from .store import Cart, MemoryStore
 
 ONGOING_HORIZON_MONTHS = 12  # an open-ended monthly credit is valued over one year in savings estimates
-DEVICE_ATTACHED = ("device_credit", "prepaid_card")
 
 
 @dataclass(frozen=True)
@@ -25,9 +24,10 @@ class Facts:
     tradein: bool
     addon_kinds: frozenset[str]
     accessories: int
-    accessory_cents: int
+    accessory_lots: tuple[tuple[int, int], ...]  # (unit price, quantity) per accessory in the cart
     plans: tuple[sqlite3.Row, ...]  # plans that would qualify: the cart's plans, else the account's
     oldest_device_age: int | None
+    tradein_ages: tuple[int, ...]  # months owned of each phone traded in in this cart
     support_contacts: int
 
 
@@ -57,17 +57,38 @@ def _account_history(
     return plans, oldest, contacts
 
 
-def _cart_addons(conn: sqlite3.Connection, cart: Cart | None) -> tuple[set[str], int, int, int]:
+def _cart_addons(
+    conn: sqlite3.Connection, cart: Cart | None
+) -> tuple[set[str], int, tuple[tuple[int, int], ...], int]:
     kinds: set[str] = set()
-    accessories = accessory_cents = connected = 0
+    accessories = connected = 0
+    lots: list[tuple[int, int]] = []
     for item in (i for i in (cart.items if cart else ()) if i.kind == "addon"):
         row = conn.execute("SELECT kind, one_time_cents FROM addons WHERE sku = ?", (item.sku,)).fetchone()
         kinds.add(row["kind"])
         connected += item.quantity if row["kind"] == "connected_line" else 0
         if row["kind"] == "accessory":
             accessories += item.quantity
-            accessory_cents += row["one_time_cents"] * item.quantity
-    return kinds, accessories, accessory_cents, connected
+            lots.append((row["one_time_cents"], item.quantity))
+    return kinds, accessories, tuple(lots), connected
+
+
+def _tradein_ages(conn: sqlite3.Connection, cart: Cart | None, today: date) -> tuple[int, ...]:
+    lines = [i.line_id for i in (cart.items if cart else ()) if i.kind == "tradein"]
+    dates = [
+        conn.execute("SELECT device_purchase_date FROM lines WHERE line_id = ?", (line_id,)).fetchone()[0]
+        for line_id in lines
+    ]
+    return tuple(months_between(date.fromisoformat(d), today) for d in dates)
+
+
+def _top_units_cents(lots: tuple[tuple[int, int], ...], max_units: int | None) -> int:
+    """Total price of the most expensive units, at most max_units of them (all when there is no cap)."""
+    remaining, total = max_units if max_units is not None else sum(q for _, q in lots), 0
+    for price, quantity in sorted(lots, reverse=True):
+        taken = min(quantity, remaining)
+        total, remaining = total + price * taken, remaining - taken
+    return total
 
 
 def gather_facts(conn: sqlite3.Connection, account: sqlite3.Row | None, cart: Cart | None) -> Facts:
@@ -79,13 +100,13 @@ def gather_facts(conn: sqlite3.Connection, account: sqlite3.Row | None, cart: Ca
     if account is not None:
         plans, oldest, contacts = _account_history(conn, account["account_id"], today)
         existing = len(plans)
-    kinds, accessories, accessory_cents, connected = _cart_addons(conn, cart)
+    kinds, accessories, accessory_lots, connected = _cart_addons(conn, cart)
     return Facts(
         account=account, lines=existing + len(new_lines) + connected, new_lines=len(new_lines),
         port_in=any(i.port_in for i in new_lines), devices=tuple(i.sku for i in items if i.kind == "device"),
         tradein=any(i.kind == "tradein" for i in items), addon_kinds=frozenset(kinds), accessories=accessories,
-        accessory_cents=accessory_cents, plans=tuple(_plans_for(conn, cart_plan_skus) or plans),
-        oldest_device_age=oldest, support_contacts=contacts,
+        accessory_lots=accessory_lots, plans=tuple(_plans_for(conn, cart_plan_skus) or plans),
+        oldest_device_age=oldest, tradein_ages=_tradein_ages(conn, cart, today), support_contacts=contacts,
     )
 
 
@@ -139,7 +160,10 @@ def _account_reasons(promo: sqlite3.Row, facts: Facts) -> list[str]:
     if promo["min_support_contacts_90d"] and facts.support_contacts < promo["min_support_contacts_90d"]:
         reasons.append(f"Needs {promo['min_support_contacts_90d']}+ support contacts in the last 90 days")
     age = promo["min_device_age_months"]
-    if age and (facts.oldest_device_age is None or facts.oldest_device_age < age):
+    if age and promo["requires_tradein"] and facts.tradein_ages:
+        if max(facts.tradein_ages) < age:
+            reasons.append(f"Trade in a phone owned {age}+ months (the one in this cart: {max(facts.tradein_ages)})")
+    elif age and (facts.oldest_device_age is None or facts.oldest_device_age < age):
         reasons.append(f"Needs a device owned {age}+ months")
     return reasons
 
@@ -186,7 +210,7 @@ def _cart_reasons(conn: sqlite3.Connection, promo: sqlite3.Row, facts: Facts) ->
 def savings_cents(promo: sqlite3.Row, facts: Facts) -> int:
     """Estimated value of an eligible promotion. Open-ended monthly credits count for one year."""
     if promo["kind"] == "accessory_discount":
-        return half_up(promo["percent_off"] * facts.accessory_cents / 100)
+        return half_up(promo["percent_off"] * _top_units_cents(facts.accessory_lots, promo["max_units"]) / 100)
     cap = promo["max_units"]
     if promo["per"] == "device":
         units = min(_qualifying_devices(promo, facts), cap or 99)
@@ -194,8 +218,13 @@ def savings_cents(promo: sqlite3.Row, facts: Facts) -> int:
         units = min(facts.new_lines or facts.lines, cap or 99)
     else:
         units = 1
+    return unit_value_cents(promo) * units
+
+
+def unit_value_cents(promo: sqlite3.Row) -> int:
+    """What one unit (device, line or order) of an offer is worth. Open-ended monthly credits count for one year."""
     months = (promo["payout_months"] or ONGOING_HORIZON_MONTHS) if promo["kind"] == "bill_credit" else 1
-    return promo["value_cents"] * units * months
+    return promo["value_cents"] * months
 
 
 def _result(promo: sqlite3.Row, reasons: list[str], facts: Facts) -> dict:
