@@ -5,10 +5,14 @@ pytest.importorskip("pydantic")
 from api.db import connect  # noqa: E402
 from api.errors import DomainError  # noqa: E402
 from api.schemas.commerce import (  # noqa: E402
-    Addon, Device, FinancingQuote, Plan, TradeInPoint, TradeInValue,
+    Addon,
+    Device,
+    FinancingQuote,
+    Plan,
+    TradeInPoint,
+    TradeInValue,
 )
 from api.services import catalog, pricing  # noqa: E402
-
 from datagen import catalog as dg  # noqa: E402
 
 DEVICE = dg.device_by_name("iPhone 17").sku

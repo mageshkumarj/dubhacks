@@ -9,7 +9,12 @@ from ..db import get_conn
 from ..envelope import ok
 from ..schemas.common import Envelope
 from ..schemas.customer import (
-    AccountSummary, BillingMonth, CustomerContext, Household, SupportInteraction, UsageMonth,
+    AccountSummary,
+    BillingMonth,
+    CustomerContext,
+    Household,
+    SupportInteraction,
+    UsageMonth,
 )
 from ..services import accounts, context, history
 from .responses import ERROR_RESPONSES
@@ -33,7 +38,7 @@ def _found(value, what: str):
 def list_accounts(
     conn: Conn,
     segment: Annotated[str | None, Query(pattern=r"^[a-z_]{2,20}$")] = None,
-    persona_only: Annotated[bool, Query(description="Only the 10 curated demo accounts")] = False,
+    persona_only: Annotated[bool, Query(description="Only the 42 curated persona accounts")] = False,
     limit: Limit = 50,
     offset: Offset = 0,
 ) -> dict:

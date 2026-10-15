@@ -3,6 +3,7 @@ import sqlite3
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -46,6 +47,12 @@ async def mark_stub_data(request: Request, call_next) -> Response:
     response = await call_next(request)
     response.headers["X-Data-Source"] = "stub"
     return response
+
+
+# Registered last so it is the outermost middleware: browser apps get CORS headers even on 4xx/413 responses.
+app.add_middleware(
+    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], expose_headers=["X-Data-Source"],
+)
 
 
 STUB_HEADERS = {"X-Data-Source": "stub"}

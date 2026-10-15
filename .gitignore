@@ -1,0 +1,15 @@
+# Organizer-only churn labels and model: never commit
+private/
+
+# Python and tooling
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.db.tmp
+
+# OS
+.DS_Store

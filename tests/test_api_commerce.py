@@ -8,7 +8,6 @@ pytest.importorskip("httpx")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from api.main import app  # noqa: E402
-
 from datagen import catalog as dg  # noqa: E402
 
 FLAGSHIP = dg.device_by_name("iPhone 17").sku
