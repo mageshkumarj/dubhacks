@@ -176,6 +176,14 @@ python -m datagen --labels-out private/labels.json --label-model private/model.p
   for extra signals and should differ structurally from the public features, not just in coefficients.
 - Labels can only be written to `private/` or outside the repo. Salts under 32 characters are rejected.
 - The labels file stores a SHA-256 of the model, never its parameters.
-- Exclude `ACC-PERSONA-*` accounts from scoring. Their notes describe their situation.
+- `ACC-PERSONA-*` accounts are left out of the labels file: their stories are pinned by hand.
+- The labels file has two parts. `churned_90d` is one random draw per account, and `probability` is the model's
+  churn probability for each account (4 decimals) that the draw came from. Score submissions against `probability`
+  (log loss or Brier score against `probability`, or Spearman correlation). A single draw is noisy: on the shipped data
+  the best possible AUC is about 0.825, one signal alone (recent support contacts) scores about 0.776, and one draw moves
+  AUC by about 0.01, so a leaderboard on `churned_90d` alone mostly ranks noise near the top.
+- Do not build `private/model.py` on the generator's internals (for example `AccountSpec.unhappiness`, or anything you
+  can recompute from `datagen/` with the public seed 2026): anyone can recompute those from the public code. Base the
+  model on what is in the database, as above.
 - Before publishing, both of these must print nothing: `git ls-files private/` and
   `git grep -lE '"churned_90d": \{$'` (the second matches a generated labels file, not the README text).
