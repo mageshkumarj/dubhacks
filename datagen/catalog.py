@@ -1,8 +1,7 @@
 """Stub T-Mobile-branded catalog. Every SKU, price and promo here is synthetic."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
-from dataclasses import replace
 from math import exp
 
 DATA_SOURCE = "stub"
@@ -348,7 +347,7 @@ def _skus(*names: str) -> tuple[str, ...]:
 
 _ALL = ("essentials", "experience_more", "experience_beyond")
 _MORE_UP = ("experience_more", "experience_beyond")
-_BEYOND = ("experience_beyond",)
+_BEYOND_ONLY = ("experience_beyond",)
 _DEVICE = {"kind": "device_credit", "per": "device", "payout_months": 36, "max_units": 4, "source": "site"}
 
 # Source: t-mobile.com/offers, /switch/free-cell-phone-with-plan and /cell-phone-plans/student-discounts
@@ -357,7 +356,7 @@ _DEVICE = {"kind": "device_credit", "per": "device", "payout_months": 36, "max_u
 PROMOTIONS: tuple[Promotion, ...] = (
     Promotion("PROMO-STUB-IPHONE18PRO", "iPhone 18 Pro and Pro Max credit", value_cents=100_000,
               device_skus=_skus("iPhone 18 Pro", "iPhone 18 Pro Max"), requires_new_line=True, requires_port_in=True,
-              requires_tradein=True, new_line_or_tradein=True, plan_families=_BEYOND, min_plan_cents=10_000,
+              requires_tradein=True, new_line_or_tradein=True, plan_families=_BEYOND_ONLY, min_plan_cents=10_000,
               **_DEVICE),
     Promotion("PROMO-STUB-IPHONE17", "iPhone 17 credit", value_cents=83_000, device_skus=_skus("iPhone 17"),
               requires_new_line=True, requires_port_in=True, plan_families=_MORE_UP, min_plan_cents=8_500, **_DEVICE),
@@ -370,7 +369,7 @@ PROMOTIONS: tuple[Promotion, ...] = (
               device_skus=_skus("Pixel 11 Pro XL"), requires_new_line=True, requires_tradein=True,
               new_line_or_tradein=True, plan_families=_MORE_UP, min_plan_cents=8_500, **_DEVICE),
     Promotion("PROMO-STUB-RAZRPLUS", "razr+ 2026 credit", value_cents=110_000, device_skus=_skus("razr+ 2026"),
-              requires_new_line=True, plan_families=_BEYOND, min_plan_cents=10_000, **_DEVICE),
+              requires_new_line=True, plan_families=_BEYOND_ONLY, min_plan_cents=10_000, **_DEVICE),
     Promotion("PROMO-STUB-S26FE", "Galaxy S26 FE trade-in credit", value_cents=80_000,
               device_skus=_skus("Galaxy S26 FE"), requires_tradein=True, plan_families=_MORE_UP, min_plan_cents=8_500,
               **_DEVICE),

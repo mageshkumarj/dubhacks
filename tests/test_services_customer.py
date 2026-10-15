@@ -4,7 +4,12 @@ pytest.importorskip("pydantic")
 
 from api.db import connect  # noqa: E402
 from api.schemas.customer import (  # noqa: E402
-    AccountSummary, BillingMonth, CustomerContext, Household, SupportInteraction, UsageMonth,
+    AccountSummary,
+    BillingMonth,
+    CustomerContext,
+    Household,
+    SupportInteraction,
+    UsageMonth,
 )
 from api.services import accounts, context, history  # noqa: E402
 

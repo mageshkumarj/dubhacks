@@ -1,7 +1,7 @@
 """Household Mix Optimizer: households where a different arrangement could cost less or fit better."""
 
 from ..rows import LineSpec
-from .base import ESS, FOUR_LINE, HOUSEHOLD, MORE, BEYOND, customer
+from .base import BEYOND, ESS, HOUSEHOLD, MORE, customer
 
 HOUSEHOLDS = (
     customer(

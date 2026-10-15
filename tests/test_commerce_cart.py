@@ -4,12 +4,11 @@ pytest.importorskip("pydantic")
 
 from api.db import connect  # noqa: E402
 from api.errors import DomainError  # noqa: E402
-from api.schemas.commerce import CartView, Order, PromotionResult  # noqa: E402
+from api.schemas.commerce import CartView, Order  # noqa: E402
 from api.services import carts, checkout, promotions  # noqa: E402
 from api.services.store import MemoryStore  # noqa: E402
-from datagen.writer import build_database  # noqa: E402
-
 from datagen import catalog as dg  # noqa: E402
+from datagen.writer import build_database  # noqa: E402
 
 FLAGSHIP = dg.device_by_name("iPhone 17").sku
 PRICE = dg.device_by_name("iPhone 17").msrp_cents  # 929.99

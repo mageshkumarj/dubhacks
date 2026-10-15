@@ -3,7 +3,17 @@
 from .. import catalog
 from ..rows import LineSpec
 from .base import (
-    BEYOND, CART_WHISPERER, ESS, HINT, HOUSEHOLD, MATCHMAKER, MORE, NEXT_BEST_MOMENT, SAVER, TIMEKEEPER, VIDEO,
+    BEYOND,
+    CART_WHISPERER,
+    ESS,
+    HINT,
+    HOUSEHOLD,
+    MATCHMAKER,
+    MORE,
+    NEXT_BEST_MOMENT,
+    SAVER,
+    TIMEKEEPER,
+    VIDEO,
     customer,
 )
 
