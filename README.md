@@ -113,6 +113,9 @@ curl -X POST localhost:8000/v1/cart/CART-.../items -H 'content-type: application
   down; `subprime` is 9.9% with 20% down. `"payment": "full"` charges the whole price today.
 - Trade-in credit from `tradein` items is applied to the **first device** in the cart. Anything left over is
   reported as `tradein_credit_unapplied_cents`. A `tradein` item takes its device from the line you name.
+- Trading in a phone that is still being paid off **charges the remaining balance today** (`balance_owed_cents` on the
+  item, `tradein_balance_owed_cents` in the totals) and drops that phone's old monthly installment, so the item's
+  `monthly_cents` is negative. A paid-off phone owes 0.
 - A `plan` item charges the **difference** from the line's current plan. A `new_line` item is priced by its
   position in the household using the plan's published per-line table (each extra line costs less).
 - Device protection must cover a real phone, and the tier must match it. Name the line (`line_id`) to protect the phone

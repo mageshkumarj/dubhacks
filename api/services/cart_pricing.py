@@ -2,7 +2,8 @@
 
 Rules (stub, documented in the README): trade-in credit is applied to the first device in the cart; a
 financed device pays the minimum down payment for the customer's credit tier today and the rest monthly
-over 24 months; a plan change charges the difference; a new line is priced by its position in the household.
+over 24 months; a plan change charges the difference; a new line is priced by its position in the
+household. A traded-in phone's balance is charged today and its old installment stops.
 """
 
 import sqlite3
@@ -20,7 +21,8 @@ def _lines(conn: sqlite3.Connection, account_id: str | None) -> list[sqlite3.Row
     if account_id is None:
         return []
     return conn.execute(
-        "SELECT line_id, plan_sku, device_sku, device_purchase_date, tradein_eligible FROM lines "
+        "SELECT line_id, plan_sku, device_sku, device_purchase_date, tradein_eligible, financing_balance_cents, "
+        "monthly_installment_cents, financing_months_remaining FROM lines "
         "WHERE account_id = ? ORDER BY rowid",
         (account_id,),
     ).fetchall()
@@ -61,14 +63,21 @@ def _addon_amounts(conn: sqlite3.Connection, item: CartItem) -> tuple[int, int]:
     return row["one_time_cents"] * item.quantity, row["monthly_cents"] * item.quantity
 
 
-def _view_item(item: CartItem, name: str, due: int, monthly: int, earned: int, applied: int) -> dict:
+def _tradein_payoff(line: sqlite3.Row) -> tuple[int, int]:
+    """(balance still owed, monthly installment that stops once the phone is paid off) for a traded-in phone."""
+    owed = line["financing_balance_cents"] or 0
+    stops = line["monthly_installment_cents"] or 0 if (line["financing_months_remaining"] or 0) > 0 else 0
+    return owed, stops
+
+
+def _view_item(item: CartItem, name: str, due: int, monthly: int, earned: int, applied: int, owed: int = 0) -> dict:
     is_device = item.kind == "device"
     return {
         "item_id": item.item_id, "kind": item.kind, "sku": item.sku, "name": name, "line_id": item.line_id,
         "quantity": item.quantity, "payment": item.payment if is_device else None,
         "condition": item.condition if item.kind == "tradein" else None, "port_in": item.port_in,
         "due_today_cents": due, "monthly_cents": monthly,
-        "credit_earned_cents": earned, "credit_applied_cents": applied,
+        "credit_earned_cents": earned, "credit_applied_cents": applied, "balance_owed_cents": owed,
     }
 
 
@@ -86,7 +95,7 @@ def build_view(conn: sqlite3.Connection, cart: Cart) -> dict:
     first_device = next((i.item_id for i in cart.items if i.kind == "device"), None)
     new_lines, applied, views = 0, 0, []
     for item in cart.items:
-        due = monthly = earned = applied_here = 0
+        due = monthly = earned = applied_here = owed = 0
         if item.kind == "device":
             msrp = conn.execute("SELECT msrp_cents FROM devices WHERE sku = ?", (item.sku,)).fetchone()[0]
             applied_here = min(total_credit, msrp) if item.item_id == first_device else 0
@@ -102,7 +111,9 @@ def build_view(conn: sqlite3.Connection, cart: Cart) -> dict:
             monthly = _plan_price(conn, item.sku, position) - _plan_price(conn, line["plan_sku"], position)
         else:
             earned = credits[item.item_id]
-        views.append(_view_item(item, _name(conn, item), due, monthly, earned, applied_here))
+            owed, installment = _tradein_payoff(by_id[item.line_id][1])
+            due, monthly = owed, -installment
+        views.append(_view_item(item, _name(conn, item), due, monthly, earned, applied_here, owed))
     return {
         "cart_id": cart.cart_id, "account_id": cart.account_id, "status": cart.status, "items": views,
         "totals": {
@@ -112,5 +123,6 @@ def build_view(conn: sqlite3.Connection, cart: Cart) -> dict:
             "tradein_credit_cents": total_credit,
             "tradein_credit_applied_cents": applied,
             "tradein_credit_unapplied_cents": total_credit - applied,
+            "tradein_balance_owed_cents": sum(v["balance_owed_cents"] for v in views),
         },
     }
