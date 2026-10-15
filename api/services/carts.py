@@ -42,25 +42,38 @@ def _line_for(conn: sqlite3.Connection, cart: Cart, line_id: str) -> sqlite3.Row
     return row
 
 
-def _check_plan_rules(conn: sqlite3.Connection, cart: Cart, kind: str, sku: str) -> None:
-    """A plan can be sold only to eligible households with an allowed number of lines."""
-    plan = catalog.get_plan(conn, sku)
-    group = None
-    existing = 0
-    if cart.account_id is not None:
-        group = conn.execute(
-            "SELECT discount_group FROM accounts WHERE account_id = ?", (cart.account_id,)
-        ).fetchone()[0]
-        existing = conn.execute("SELECT COUNT(*) FROM lines WHERE account_id = ?", (cart.account_id,)).fetchone()[0]
-    if cart.account_id is not None and plan["eligibility"] and plan["eligibility"] != group:
-        raise invalid("PLAN_NOT_ELIGIBLE", f"{plan['name']} requires a {plan['eligibility']} account")
-    lines = existing + sum(1 for i in cart.items if i.kind == "new_line") + (1 if kind == "new_line" else 0)
-    if kind == "plan":
-        lines = max(existing, 1)
+def _existing_lines(conn: sqlite3.Connection, cart: Cart) -> int:
+    if cart.account_id is None:
+        return 0
+    return conn.execute("SELECT COUNT(*) FROM lines WHERE account_id = ?", (cart.account_id,)).fetchone()[0]
+
+
+def _check_line_limits(plan: sqlite3.Row, lines: int) -> None:
     if plan["max_lines"] is not None and lines > plan["max_lines"]:
         raise invalid("PLAN_LINE_LIMIT", f"{plan['name']} allows at most {plan['max_lines']} lines")
     if lines < plan["min_lines"]:
         raise invalid("PLAN_LINE_LIMIT", f"{plan['name']} requires at least {plan['min_lines']} lines")
+
+
+def _check_plan_rules(conn: sqlite3.Connection, cart: Cart, kind: str, sku: str) -> None:
+    """A plan can be sold only to eligible households with an allowed number of lines (new lines in the cart count)."""
+    plan = catalog.get_plan(conn, sku)
+    if cart.account_id is not None:
+        group = conn.execute(
+            "SELECT discount_group FROM accounts WHERE account_id = ?", (cart.account_id,)
+        ).fetchone()[0]
+        if plan["eligibility"] and plan["eligibility"] != group:
+            raise invalid("PLAN_NOT_ELIGIBLE", f"{plan['name']} requires a {plan['eligibility']} account")
+    lines = _existing_lines(conn, cart) + sum(1 for i in cart.items if i.kind == "new_line")
+    _check_line_limits(plan, lines + (1 if kind == "new_line" else 0))
+
+
+def validate_line_limits(conn: sqlite3.Connection, cart: Cart) -> None:
+    """At checkout, every plan and new_line item must still fit the household's final line count."""
+    lines = _existing_lines(conn, cart) + sum(1 for i in cart.items if i.kind == "new_line")
+    for item in cart.items:
+        if item.kind in ("plan", "new_line"):
+            _check_line_limits(catalog.get_plan(conn, item.sku), lines)
 
 
 def _plan_families(conn: sqlite3.Connection, cart: Cart) -> set[str]:

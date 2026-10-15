@@ -46,6 +46,7 @@ def checkout(
             raise invalid("CART_EMPTY", "Cannot check out an empty cart")
         if any(store.is_traded_in(line_id) for line_id in _traded_in_lines(cart)):
             raise conflict("TRADEIN_ALREADY_USED", "A line in this cart was already traded in on another order")
+        carts.validate_line_limits(conn, cart)
         protection.validate_cart(conn, cart)
         promos = _applied(conn, cart, promo_skus)
         view = build_view(conn, cart)

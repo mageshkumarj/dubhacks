@@ -126,7 +126,8 @@ curl -X POST localhost:8000/v1/cart/CART-.../items -H 'content-type: application
   (`ADDON_NOT_ELIGIBLE`). Accessories list the devices they fit in `compatible_device_skus`.
 - Discount plans (55+, Partner, Community) are sold only to accounts with a matching `discount_group`;
   55+ and Saver plans allow at most 2 lines and the Essentials 4 Line Offer needs 4 or more (`PLAN_NOT_ELIGIBLE`,
-  `PLAN_LINE_LIMIT`).
+  `PLAN_LINE_LIMIT`). New lines in the cart count towards a plan's limits, so add the `new_line` items first
+  (a family adding its 4th line can then move its existing lines to the 4 Line Offer). Checkout re-checks the limits.
 - `GET /v1/promotions` returns every offer with `eligible`, the `reasons` it is not, and `estimated_savings_cents`.
   Eligibility depends on the customer (segment group, tenure, credit tier, device age, recent support contacts),
   the cart (new line, `port_in`, trade-in, device, plan, add-ons, accessories) and the offer's own limits.
