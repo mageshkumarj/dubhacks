@@ -7,9 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .body_limit import BodyLimitMiddleware
 from .config import API_VERSION, db_path
 from .db import connect
-from .envelope import fail, ok
+from .envelope import STUB_HEADERS, fail, ok
 from .errors import DomainError
 from .routers import commerce_cart, commerce_catalog, customer, personas
 
@@ -33,13 +34,7 @@ app.include_router(personas.router)
 MAX_BODY_BYTES = 65_536
 
 
-@app.middleware("http")
-async def limit_body_size(request: Request, call_next) -> Response:
-    declared = request.headers.get("content-length", "")
-    if declared.isdigit() and int(declared) > MAX_BODY_BYTES:
-        body = fail(f"Request body exceeds {MAX_BODY_BYTES} bytes", "PAYLOAD_TOO_LARGE")
-        return JSONResponse(status_code=413, content=body, headers=STUB_HEADERS)
-    return await call_next(request)
+app.add_middleware(BodyLimitMiddleware, max_bytes=MAX_BODY_BYTES)
 
 
 @app.middleware("http")
@@ -55,7 +50,6 @@ app.add_middleware(
 )
 
 
-STUB_HEADERS = {"X-Data-Source": "stub"}
 READY_KEYS = ("data_source", "schema_version", "as_of", "content_sha256")
 
 

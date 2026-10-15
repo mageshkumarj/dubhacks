@@ -16,6 +16,7 @@ MATCHMAKER = "matchmaker"
 NEXT_BEST_MOMENT = "next_best_moment"
 TIMEKEEPER = "timekeeper"
 HOUSEHOLD = "household_optimizer"
+MIN_TENURE_FOR_OLDER_CONTACTS = 3  # contacts 91+ days ago need an account older than 90 days
 
 
 def dev(name: str) -> str:
@@ -65,6 +66,11 @@ def customer(
     title: str, theme: str, scenario: str, secondary: tuple[str, ...] = (), cart: tuple[dict, ...] = (),
     related: int | None = None, **spec_kwargs,
 ) -> Persona:
+    if spec_kwargs.get("support_older") and tenure <= MIN_TENURE_FOR_OLDER_CONTACTS:
+        raise ValueError(
+            f"persona {number}: support_older needs a tenure above {MIN_TENURE_FOR_OLDER_CONTACTS} months "
+            "(older contacts are 91+ days back)"
+        )
     account_id = f"ACC-PERSONA-{number:02d}"
     spec = AccountSpec(
         account_id=account_id, id_prefix=f"LN-PERSONA-{number:02d}", segment=segment, tenure_months=tenure,
