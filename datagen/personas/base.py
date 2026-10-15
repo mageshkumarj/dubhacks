@@ -61,14 +61,14 @@ def _cart_item(number: int | None, item: dict) -> dict:
 
 
 def customer(
-    number: int, segment: str, tenure: int, unhappiness: float, lines: tuple[LineSpec, ...], note: str, *,
+    number: int, segment: str, tenure: int, unhappiness: float, lines: tuple[LineSpec, ...], *,
     title: str, theme: str, scenario: str, secondary: tuple[str, ...] = (), cart: tuple[dict, ...] = (),
     related: int | None = None, **spec_kwargs,
 ) -> Persona:
     account_id = f"ACC-PERSONA-{number:02d}"
     spec = AccountSpec(
         account_id=account_id, id_prefix=f"LN-PERSONA-{number:02d}", segment=segment, tenure_months=tenure,
-        unhappiness=unhappiness, lines=lines, persona_note=note, plan_mismatch_rate=0.0,
+        unhappiness=unhappiness, lines=lines, persona_note=title, plan_mismatch_rate=0.0,
         bill_spike_pct=spec_kwargs.pop("bill_spike_pct", 0.0), **spec_kwargs,
     )
     meta = PersonaMeta(

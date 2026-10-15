@@ -14,6 +14,8 @@ class LineSpec:
     protection: bool | None = None
     financed: bool | None = None
     hotspot_user: bool | None = None
+    usage_gb: float | None = None  # pin the mean monthly GB (the oldest month's, when usage_growth is set)
+    usage_growth: float | None = None  # pin a monthly usage multiplier, e.g. 1.06 for steady growth
     label: str | None = None
 
 

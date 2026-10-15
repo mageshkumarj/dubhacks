@@ -10,7 +10,7 @@ HOUSEHOLDS = (
             LineSpec("partner", "light", 18, plan_sku=MORE, label="Parent 2"),
             LineSpec("teen", "light", 10, plan_sku=MORE, label="Teen"),
             LineSpec("child", "light", 10, plan_sku=MORE, label="Child"),
-        ), "Four lines on an unlimited plan, light usage.", support_recent=0, support_older=0,
+        ), support_recent=0, support_older=0,
         title="Family of four on an unlimited plan with light usage", theme=HOUSEHOLD,
         scenario="Four lines, none using much data, all on a premium unlimited plan. Are there plans or offers aimed "
                  "at exactly this kind of household?",
@@ -19,7 +19,7 @@ HOUSEHOLDS = (
         38, "senior", 60, 0.1, (
             LineSpec("senior", "moderate", 20, plan_sku=MORE, label="Partner 1"),
             LineSpec("senior", "light", 26, plan_sku=MORE, label="Partner 2"),
-        ), "Couple over 55 on standard pricing.", discount_group="55_plus", support_recent=0, support_older=0,
+        ), discount_group="55_plus", support_recent=0, support_older=0,
         title="Couple over 55 paying standard prices", theme=HOUSEHOLD,
         scenario="Both partners qualify for 55+ pricing but are on the regular version of the same plan. What changes "
                  "if they use the pricing they qualify for?",
@@ -31,7 +31,7 @@ HOUSEHOLDS = (
             LineSpec("teen", "moderate", 10, plan_sku=ESS, label="Teen A"),
             LineSpec("teen", "moderate", 10, plan_sku=ESS, label="Teen B"),
             LineSpec("child", "light", 12, plan_sku=ESS, label="Child"),
-        ), "Five lines on the entry-level plan.", support_recent=0, support_older=0,
+        ), support_recent=0, support_older=0,
         title="Five lines on the entry-level plan", theme=HOUSEHOLD,
         scenario="Five lines that mostly stay under the data cap. There are special offers and plan variants for "
                  "households with many lines.",
@@ -41,7 +41,7 @@ HOUSEHOLDS = (
             LineSpec("primary", "heavy", 14, plan_sku=BEYOND, label="Parent 1"),
             LineSpec("partner", "moderate", 16, plan_sku=BEYOND, label="Parent 2"),
             LineSpec("adult", "moderate", 12, plan_sku=BEYOND, label="Adult child"),
-        ), "Household that qualifies for a partner discount but pays standard prices.", discount_group="partner",
+        ), discount_group="partner",
         support_recent=0, support_older=0, title="Household that qualifies for a partner discount but does not use it",
         theme=HOUSEHOLD,
         scenario="Three lines on the top plan at the regular price, in a household that is eligible for the partner "
@@ -51,7 +51,7 @@ HOUSEHOLDS = (
         41, "couple", 80, 0.1, (
             LineSpec("primary", "moderate", 16, plan_sku=MORE, label="Parent 1"),
             LineSpec("partner", "moderate", 20, plan_sku=MORE, label="Parent 2"),
-        ), "Parents with their own account; their grown child has another.", related=42, support_recent=0,
+        ), related=42, support_recent=0,
         support_older=0, title="Parents on their own account while their grown child has another",
         theme=HOUSEHOLD,
         scenario="Two lines on one account. Their adult child and partner have their own separate account, also on "
@@ -61,7 +61,7 @@ HOUSEHOLDS = (
         42, "couple", 30, 0.2, (
             LineSpec("primary", "moderate", 10, plan_sku=MORE, label="Adult child"),
             LineSpec("partner", "moderate", 12, plan_sku=MORE, label="Partner"),
-        ), "Young couple on their own account; parents have another.", related=41, support_recent=0,
+        ), related=41, support_recent=0,
         support_older=0, title="Young couple paying separately from the parents' account", theme=HOUSEHOLD,
         scenario="Two lines on their own account, on the same plan as the parents' separate account. They split bills "
                  "informally and would be open to combining.",

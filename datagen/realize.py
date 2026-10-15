@@ -10,6 +10,7 @@ from .util import clip, months_ago, months_between, poisson, weighted
 
 FINANCING_MONTHS = 24
 HISTORY_MONTHS = 12
+MIN_SPIKE_HISTORY = 3
 USAGE_MEAN_GB = {"light": 3.0, "moderate": 15.0, "heavy": 55.0}
 PLAN = "TMO-STUB-PLAN-"
 FIT_PLANS = {
@@ -153,13 +154,15 @@ def _line_rows(rng: Random, acct: AccountSpec, index: int, spec: LineSpec, line_
 def _usage_rows(
     rng: Random, line_id: str, spec: LineSpec, months: tuple[str, ...]
 ) -> tuple[tuple, ...]:
-    base = USAGE_MEAN_GB[spec.usage_class] * rng.lognormvariate(0, 0.25)
+    drawn_base = USAGE_MEAN_GB[spec.usage_class] * rng.lognormvariate(0, 0.25)  # always drawn, so RNG use is stable
+    base = spec.usage_gb if spec.usage_gb is not None else drawn_base
     drawn_hotspot = spec.usage_class == "heavy" and rng.random() < 0.4
     hotspot_user = spec.hotspot_user if spec.hotspot_user is not None else drawn_hotspot
     streamer = 1.8 if spec.role == "teen" else 1.0
     rows = []
-    for month in months:
-        gb = round(base * rng.lognormvariate(0, 0.15), 2)
+    for i, month in enumerate(months):
+        trend = spec.usage_growth**i if spec.usage_growth else 1.0
+        gb = round(base * trend * rng.lognormvariate(0, 0.15), 2)
         rows.append((
             line_id, month, gb, max(0, round(rng.gauss(220, 90))),
             round(gb * 0.35 * streamer * rng.uniform(0.8, 1.2), 1),
@@ -176,6 +179,15 @@ def _installment_due(bill: LineBill, month: str) -> int:
     return bill.installment if bill.purchase <= start < end else 0
 
 
+def _change_reason(i: int, installments: int, previous: int, spike_starts: bool) -> str:
+    """Why the bill changed: a new phone, a phone paid off, or a promotion ending, in that order of precedence."""
+    if i > 0 and installments > previous:
+        return "device_installment"
+    if i > 0 and installments < previous:
+        return "installment_ended"
+    return "promo_expired" if spike_starts else "stable"
+
+
 def _billing_rows(
     rng: Random, acct: AccountSpec, shared_cents: int, bills: list[LineBill], months: tuple[str, ...]
 ) -> tuple[tuple, ...]:
@@ -183,17 +195,18 @@ def _billing_rows(
     if spike is None:
         likely = acct.unhappiness > 0.55 or rng.random() < 0.08
         spike = rng.uniform(0.08, 0.25) if likely else 0.0
+    if len(months) < MIN_SPIKE_HISTORY:
+        spike = 0.0  # drawn above so RNG use is stable, but a promo cannot expire on the first bill
+    spike_start = len(months) - 2
     totals, reasons, previous_installments = [], [], 0
     for i, month in enumerate(months):
         installments = sum(_installment_due(b, month) for b in bills)
         base = shared_cents + sum(b.fixed_cents for b in bills) + installments
         factor = 1 + rng.uniform(-0.02, 0.02)
-        first_spike_month = bool(spike) and i == len(months) - 2
-        if spike and i >= len(months) - 2:
-            factor *= 1 + spike
+        if spike and i < spike_start:
+            factor /= 1 + spike  # the promotion was still running; the last two months are at list price
         totals.append(round(base * factor))
-        new_phone = i > 0 and installments > previous_installments
-        reasons.append("device_installment" if new_phone else "promo_expired" if first_spike_month else "stable")
+        reasons.append(_change_reason(i, installments, previous_installments, bool(spike) and i == spike_start))
         previous_installments = installments
     changes = (0, *(b - a for a, b in zip(totals, totals[1:], strict=False)))
     return tuple(

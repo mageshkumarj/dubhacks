@@ -19,8 +19,8 @@ from .base import (
 
 CORE = (
     customer(
-        1, "student", 8, 0.1, (LineSpec("student", "light", byod=True, plan_sku=SAVER),),
-        "College student, BYOD, budget-sensitive, light usage.", credit_tier="near_prime", discount_group="student",
+        1, "student", 8, 0.1, (LineSpec("student", "light", byod=True, plan_sku=SAVER),), credit_tier="near_prime",
+        discount_group="student",
         support_recent=0, support_older=0, title="Budget student with their own phone", theme=MATCHMAKER,
         secondary=(CART_WHISPERER,), cart=({"kind": "new_line", "plan": "ESSENTIALS-SAVER", "port_in": True},),
         scenario="A first-year student paying for the cheapest plan with a phone they already own. A friend wants to "
@@ -33,7 +33,7 @@ CORE = (
             LineSpec("teen", "heavy", 8, plan_sku=MORE, label="Teen A"),
             LineSpec("teen", "heavy", 10, plan_sku=MORE, label="Teen B"),
             LineSpec("child", "light", 18, plan_sku=MORE, label="Kid"),
-        ), "Family of five with two heavy-streaming teens.", services=(HINT, VIDEO), support_recent=1,
+        ), services=(HINT, VIDEO), support_recent=1,
         support_older=1, title="Family of five with two streaming teens", theme=HOUSEHOLD,
         scenario="Five lines share one plan and a large monthly bill. Two teens use far more data than the parents and "
                  "the youngest uses very little. Is this household set up in the best way?",
@@ -41,8 +41,7 @@ CORE = (
     customer(
         3, "single", 52, 0.2,
         (LineSpec("primary", "moderate", 40, device_sku=catalog.device_by_name("iPhone 13").sku, plan_sku=ESS,
-                  financed=False),),
-        "Upgrader: phone is 3+ years old, fully paid off, trade-in eligible.", support_recent=0, support_older=1,
+                  financed=False),), support_recent=0, support_older=1,
         title="Paid-off phone that is over three years old", theme=TIMEKEEPER, secondary=(CART_WHISPERER,),
         cart=({"kind": "device", "device": "iPhone 18 Pro"}, {"kind": "tradein", "line": 1}),
         scenario="A loyal single-line customer on a modest plan owns a fully paid-off iPhone 13 and keeps getting "
@@ -53,8 +52,10 @@ CORE = (
             LineSpec("primary", "moderate", 22, plan_sku=MORE, label="Alex"),
             LineSpec("partner", "moderate", 22, plan_sku=MORE, label="Sam"),
             LineSpec("adult", "heavy", 10, plan_sku=MORE, label="Line 3"),
-        ), "At-risk: recent support friction, bill jump, researching competitors.", bill_spike_pct=0.18,
-        support_recent=5, support_older=2, title="Couple whose bill jumped and who keep calling support",
+        ), bill_spike_pct=0.18,
+        support_recent=5, support_older=2, support_topics=("network", "device"),
+        competitor_score=0.85,
+        title="Couple whose bill jumped and who keep calling support",
         theme=NEXT_BEST_MOMENT,
         scenario="Three lines, a steady bill until two months ago, and a run of unhappy support contacts about network "
                  "and devices. They have also been researching other carriers. What should happen next?",
@@ -64,7 +65,7 @@ CORE = (
             LineSpec("primary", "light", 30, plan_sku=BEYOND, label="Light user A"),
             LineSpec("partner", "light", 26, plan_sku=BEYOND, label="Light user B"),
             LineSpec("teen", "light", 12, plan_sku=BEYOND, label="Light user C"),
-        ), "Overpaying household: premium plan on every line, tiny usage.", support_recent=1, support_older=0,
+        ), support_recent=1, support_older=0,
         title="Household paying for a premium plan it barely uses", theme=HOUSEHOLD,
         scenario="Three lines on the most expensive plan, each using only a few gigabytes a month. What setup would "
                  "serve this household well for less?",
@@ -73,9 +74,9 @@ CORE = (
         6, "smb", 28, 0.25, (
             LineSpec("primary", "moderate", 15, plan_sku=ESS, label="Owner"),
             LineSpec("employee", "moderate", 15, plan_sku=ESS, label="Staff 1"),
-            LineSpec("employee", "heavy", 15, plan_sku=ESS, label="Staff 2 (field)"),
+            LineSpec("employee", "heavy", 15, plan_sku=ESS, label="Staff 2 (field)", usage_gb=62),
             LineSpec("employee", "moderate", 15, plan_sku=ESS, label="Staff 3"),
-        ), "Small business with a heavy-usage field employee on a capped plan.", support_recent=1, support_older=1,
+        ), support_recent=1, support_older=1,
         title="Small business with one heavy field employee", theme=HOUSEHOLD,
         scenario="Four business lines on one capped plan. One field employee uses far more data than the rest and may "
                  "exceed the plan's limit. How should the plan be arranged?",
@@ -83,8 +84,7 @@ CORE = (
     customer(
         7, "single", 30, 0.15,
         (LineSpec("primary", "moderate", 3, device_sku=catalog.device_by_name("iPhone 17").sku, plan_sku=MORE,
-                  financed=True),),
-        "Upgraded a few months ago and is still paying off the phone.", support_recent=0, support_older=0,
+                  financed=True),), support_recent=0, support_older=0,
         title="Customer who upgraded three months ago", theme=TIMEKEEPER,
         cart=({"kind": "device", "device": "iPhone 18 Pro"}, {"kind": "tradein", "line": 1}),
         scenario="A customer bought an iPhone 17 three months ago and still owes most of it. A new upgrade offer has "
@@ -94,7 +94,7 @@ CORE = (
         8, "senior", 90, 0.1, (
             LineSpec("senior", "light", 30, plan_sku=ESS, label="Grandpa"),
             LineSpec("senior", "light", 30, plan_sku=ESS, label="Grandma"),
-        ), "Retired couple, very light usage, long tenure; eligible for 55+ pricing.", contact_preference="call",
+        ), contact_preference="call",
         discount_group="55_plus", support_recent=0, support_older=1, title="Retired couple with very light usage",
         theme=HOUSEHOLD,
         scenario="Two lines used mostly for calls, with long tenure and a preference for phone support. "
@@ -103,8 +103,7 @@ CORE = (
     customer(
         9, "single", 18, 0.35,
         (LineSpec("primary", "heavy", 6, device_sku=catalog.device_by_name("Galaxy Z Fold7").sku, plan_sku=ESS,
-                  hotspot_user=True),),
-        "Power user capped on Essentials, heavy data and hotspot.", support_recent=2, support_older=1,
+                  hotspot_user=True, usage_gb=65),), support_recent=2, support_older=1,
         title="Power user who keeps hitting data limits", theme=MATCHMAKER,
         scenario="One line with very heavy data and hotspot use, on an entry-level plan with a data cap. Which plan "
                  "would suit how they actually use their phone?",
@@ -114,7 +113,7 @@ CORE = (
             LineSpec("primary", "moderate", 12, plan_sku=BEYOND, label="Parent 1"),
             LineSpec("partner", "moderate", 16, plan_sku=BEYOND, label="Parent 2"),
             LineSpec("child", "light", 20, plan_sku=BEYOND, label="Kid"),
-        ), "Loyal long-tenure household already bundled with home internet and streaming.", services=(HINT, VIDEO),
+        ), services=(HINT, VIDEO),
         support_recent=0, support_older=0, competitor_score=0.15, port_out=False, app_sessions=12,
         title="Loyal household of ten years, already bundled",
         theme=NEXT_BEST_MOMENT,
