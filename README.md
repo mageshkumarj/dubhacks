@@ -30,6 +30,8 @@ dependencies, and starts the API. The dataset ships pre-generated in `data/sandb
 
 Check it works: `curl http://localhost:8000/health`
 
+Browser apps (React, Vite, Next) can call the API directly: CORS is enabled for all origins.
+
 For a thorough check of every endpoint (about 5 seconds, nothing extra to install, safe to repeat):
 `python scripts/smoke_test.py` (add `--full` to check every account, or `--base-url https://...` for a hosted instance).
 
@@ -40,10 +42,9 @@ For a thorough check of every endpoint (about 5 seconds, nothing extra to instal
 | Commerce | devices, plans, add-ons, promotions, trade-in value curves |
 | Customer and context | accounts/households, lines, usage, billing, support interactions, risk signals |
 
-About 5,000 accounts and 12,000 lines, plus **10 persona accounts** (`ACC-PERSONA-01` to `-10`) that
-every team can demo against: a student, a family of five, an upgrader, an at-risk couple, an
-overpaying household, a small business, a just-upgraded customer, retirees, a power user, and a
-loyal bundled family. See [docs/data-dictionary.md](docs/data-dictionary.md).
+About 5,000 accounts and 12,000 lines, plus **42 customer persona accounts** (`ACC-PERSONA-01` to `-42`) and 8 prospect personas that
+every team can demo against, for example a student, a family of five, an upgrader, an at-risk couple, an
+overpaying household, a small business, retirees and a power user. See [docs/data-dictionary.md](docs/data-dictionary.md).
 
 ## Customer and context API (v1)
 
@@ -169,4 +170,5 @@ python -m datagen --labels-out private/labels.json --label-model private/model.p
 - Labels can only be written to `private/` or outside the repo. Salts under 32 characters are rejected.
 - The labels file stores a SHA-256 of the model, never its parameters.
 - Exclude `ACC-PERSONA-*` accounts from scoring. Their notes describe their situation.
-- Before publishing: `git ls-files | xargs grep -l churned_90d` must print nothing.
+- Before publishing, both of these must print nothing: `git ls-files private/` and
+  `git grep -lE '"churned_90d": \{$'` (the second matches a generated labels file, not the README text).
