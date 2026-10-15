@@ -1,7 +1,7 @@
 """Commerce layer, read side: catalog, trade-in values and financing quotes."""
 
 import sqlite3
-from typing import Annotated, Literal
+from typing import Annotated, Literal, TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
@@ -9,8 +9,16 @@ from ..db import get_conn
 from ..envelope import ok
 from ..errors import not_found
 from ..schemas.commerce import (
-    SKU_PATTERN, Addon, Condition, Device, FinancingQuote, FinancingQuoteRequest, Plan, PromotionDefinition,
-    TradeInPoint, TradeInValue,
+    SKU_PATTERN,
+    Addon,
+    Condition,
+    Device,
+    FinancingQuote,
+    FinancingQuoteRequest,
+    Plan,
+    PromotionDefinition,
+    TradeInPoint,
+    TradeInValue,
 )
 from ..schemas.common import Envelope
 from ..services import catalog, pricing
@@ -18,11 +26,12 @@ from .responses import ERROR_RESPONSES
 
 router = APIRouter(prefix="/v1", tags=["commerce"], responses=ERROR_RESPONSES)
 
+T = TypeVar("T")
 Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 Sku = Annotated[str, Path(pattern=SKU_PATTERN, description="e.g. TMO-STUB-DEV-0002")]
 
 
-def _found[T](value: T | None, what: str) -> T:
+def _found(value: T | None, what: str) -> T:
     if value is None:
         raise HTTPException(status_code=404, detail=f"{what} not found")
     return value
